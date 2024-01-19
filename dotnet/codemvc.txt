@@ -1,0 +1,315 @@
+dotnet new mvc -o moryapg
+dotnet new sln
+dotnet sln add moryapg.csproj
+
+dotnet add package MySql.Data 
+
+
+
+
+models->student.cs
+create folde service-> Disconnected.cs
+controller-> studentcontroller.cs
+view->student->index.cshtml
+
+
+
+
+create table moryapg(
+     Id int auto_increment primary key,
+     Name varchar(20),
+     Email varchar(30),
+     RoomNo varchar(20),
+     fees double(12,2),
+     Date date
+     );
+
+
+insert into moryapg values(default,"Aditi","adisiddam@gmail.com",'122',35000,"2022-07-23");insert into moryapg values(default,"Pushpak","pushpak@gmail.com",'142',35000,"2022-07-23");insert into moryapg values(default,"Servesh","Servesh@gmail.com",'132',35000,"2022-07-23");insert into moryapg values(default,"Ritu","Ritu@gmail.com",'22',35000,"2022-07-23");insert into moryapg values(default,"Shivam","Shivam@gmail.com",'175',35000,"2022-07-23");
+
+
+
+-------------------pojo-------------------------------
+namespace App.Models;
+
+public class Student
+{
+    public int Id{get; set;}
+    public string Name{get;set;}
+    public string Email{get;set;}
+    public string RoomNo{get;set;}
+    public double Fees{get;set;}
+    public DateTime Date{get; set;}
+}
+
+-----------------service-disconnected----------------
+using System.Data;
+using App.Models;
+using Microsoft.AspNetCore.Mvc;
+using MySql.Data.MySqlClient;
+
+namespace App.Service;
+
+public class Disconnected
+{
+    MySqlConnection connection;
+
+    public Disconnected()
+    {
+        connection = new MySqlConnection(@"server=localhost; port=3306; user=root; password=password; database=dotnet;");
+    }
+    public List<Student> GetAll()
+    {
+        MySqlCommand cmd = new MySqlCommand("select * from moryapg");
+        cmd.Connection = connection;
+        List<Student> students = new List<Student>();
+        try
+        {
+            DataSet ds = new DataSet();
+            MySqlDataAdapter da = new MySqlDataAdapter(cmd);
+            da.Fill(ds);
+            DataTable dt = ds.Tables[0];
+            DataRowCollection rows = dt.Rows;
+            foreach (DataRow row in rows)
+            {
+                int id = int.Parse(row["Id"].ToString());
+                string name = row["Name"].ToString();
+                string email = row["Email"].ToString();
+                string roomNo = row["RoomNo"].ToString();
+                double fees = double.Parse(row["Fees"].ToString());
+                DateTime date = DateTime.Parse(row["Date"].ToString());
+                students.Add(new Student { Id = id, Name = name, Email = email, RoomNo = roomNo, Fees = fees, Date = date });
+            }
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+        return students;
+    }
+
+    public Student GetById(int eid)
+    {
+        MySqlCommand cmd = new MySqlCommand("select * from moryapg where id=" + eid);
+        cmd.Connection = connection;
+        Student students = null;
+        try
+        {
+            DataSet ds = new DataSet();
+            MySqlDataAdapter da = new MySqlDataAdapter(cmd);
+            MySqlCommandBuilder bd = new MySqlCommandBuilder(da);
+            da.Fill(ds);
+            DataTable dt = ds.Tables[0];
+            DataRow []d=dt.Select("Id="+eid);
+            DataRow row=d[0];
+            int id = int.Parse(row["Id"].ToString());
+            string name = row["Name"].ToString();
+            string email = row["Email"].ToString();
+            string roomNo = row["RoomNo"].ToString();
+            double fees = double.Parse(row["Fees"].ToString());
+            DateTime date = DateTime.Parse(row["Date"].ToString());
+            students=new Student { Id = id, Name = name, Email = email, RoomNo = roomNo, Fees = fees, Date = date };
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+        return students;
+    }
+
+    public void Edit(Student s)
+    {
+        MySqlCommand cmd = new MySqlCommand("select * from moryapg where id=" + s.Id);
+        cmd.Connection = connection;
+        try
+        {
+            DataSet ds = new DataSet();
+            MySqlDataAdapter da = new MySqlDataAdapter(cmd);
+            MySqlCommandBuilder bd = new MySqlCommandBuilder(da);
+            da.Fill(ds);
+            DataTable dt = ds.Tables[0];
+            DataRow []d=dt.Select("Id="+s.Id);
+            DataRow row=d[0];
+            row["Id"]=s.Id;
+            row["Name"]=s.Name;
+            row["Email"]=s.Email;
+            row["RoomNo"]=s.RoomNo;
+            row["Fees"]=s.Fees;
+            row["Date"]=s.Date;
+            
+            da.Update(ds);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+    }
+
+     public void Add(Student s)
+    {
+        MySqlCommand cmd = new MySqlCommand("select * from moryapg ");
+        cmd.Connection = connection;
+        try
+        {
+            DataSet ds = new DataSet();
+            MySqlDataAdapter da = new MySqlDataAdapter(cmd);
+            MySqlCommandBuilder bd = new MySqlCommandBuilder(da);
+            da.Fill(ds);
+            DataTable dt = ds.Tables[0];
+            DataRow row=dt.NewRow();
+            row["Id"]=s.Id;
+            row["Name"]=s.Name;
+            row["Email"]=s.Email;
+            row["RoomNo"]=s.RoomNo;
+            row["Fees"]=s.Fees;
+            row["Date"]=s.Date;
+            dt.Rows.Add(row);
+            da.Update(ds);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+    }
+
+    public void Delete(int eid)
+    {
+        MySqlCommand cmd = new MySqlCommand("select * from moryapg where id=" + eid);
+        cmd.Connection = connection;
+        try
+        {
+            DataSet ds = new DataSet();
+            MySqlDataAdapter da = new MySqlDataAdapter(cmd);
+            MySqlCommandBuilder bd = new MySqlCommandBuilder(da);
+            da.Fill(ds);
+            DataTable dt = ds.Tables[0];
+            DataRow []d=dt.Select("Id="+eid);
+            DataRow row=d[0];
+            row.Delete();
+            
+            da.Update(ds);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+    }
+}
+-------------------controller-------------
+using System.Diagnostics;
+using App.Models;
+using App.Service;
+using Microsoft.AspNetCore.Mvc;
+using moryapg.Models;
+
+namespace moryapg.Controllers;
+
+public class StudentController : Controller
+{
+    public Disconnected _ds;
+
+    public StudentController()
+    {
+        _ds=new Disconnected();
+    }
+
+    public IActionResult Index()
+    {
+        List<Student> students=_ds.GetAll();
+        return View(students);
+    }
+    
+    public IActionResult Details(int id)
+    {
+        Student student=_ds.GetById(id);
+        return View(student);
+    }
+
+    public IActionResult Edit(int id)
+    {
+        Student student=_ds.GetById(id);
+        return View(student);
+    }
+
+    [HttpPost]
+    public IActionResult Edit(Student s)
+    {
+        _ds.Edit(s);
+        return RedirectToAction("Index");
+    }
+    
+    public IActionResult Add()
+    {
+        return View();
+    }
+    [HttpPost]
+    public IActionResult Add(Student s)
+    {
+        Console.WriteLine(s.Name);
+        _ds.Add(s);
+        return RedirectToAction("Index");
+    }
+
+    public IActionResult Delete(int id)
+    {
+        _ds.Delete(id);
+        return RedirectToAction("Index");
+    }
+    
+}
+--------------view-index--------
+@using App.Models;
+
+@{
+    List<Student> std=Model;
+        <h1>All Students </h1>
+        <hr>
+    foreach(Student s in std){
+        <p>@s.Name <a href="/student/details/@s.Id">Details</a> <a href="/student/edit/@s.Id">Edit</a> <a href="/student/delete/@s.Id">Delete</a></p>
+    }
+    <a href="/student/add">Add new</a>
+    
+}
+-------------details----------
+@using App.Models;
+
+@{
+    Student std=Model;
+    <h1>Hello @std.Name</h1>
+    <hr>
+    <p>Id : @std.Id</p>
+    <p>Name : @std.Name</p>
+    <p>RoomNo : @std.RoomNo</p>
+    <p>Email : @std.Email</p>
+    <p>Date : @std.Date</p>
+}
+----------add----------------
+@using App.Models;
+
+@{
+    Student s=Model;
+    <form method="post" asp-action="Add" asp-controller="Student">
+        Name: <input type="text" name="Name" > <br>
+        Email: <input type="text" name="Email" > <br>
+        RoomNO: <input type="text" name="RoomNo" > <br>
+        Date: <input type="date" name="Date" > <br>
+        Fees: <input type="text" name="Fees"> <br>
+        <input type="submit" value="Edit">
+    </form>
+}
+----------edit------------
+@using App.Models;
+
+@{
+    Student s=Model;
+    <form method="post" asp-action="Edit" asp-controller="Student">
+        Id:<input type="text" name="Id" value="@s.Id" readonly> <br>
+        Name: <input type="text" name="Name" value="@s.Name"> <br>
+        Email: <input type="text" name="Email" value="@s.Email"> <br>
+        RoomNO: <input type="text" name="RoomNo" value="@s.RoomNo"> <br>
+        Date: <input type="text" name="Date" value="@s.Date"> <br>
+        <input type="submit" value="Edit">
+    </form>
+}
